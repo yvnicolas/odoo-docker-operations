@@ -1,0 +1,40 @@
+#!/bin/bash
+# A script to stop and remove all odoo related docker containers for a prefix specified
+
+function usage
+{
+    echo "cleanOdoo name [function]"
+    echo "    can stop, start  and remove odoo and postgres container for this"
+  
+
+}
+
+
+function selectCommand
+{
+	case $1 in
+		'stop') command="stop";;
+		'start') command="start";;
+		'delete') command="rm -fv";;
+	esac
+}
+
+
+case $# in
+    0)  usage;
+		exit 0;;
+
+    1) command="rm -fv";;
+
+	2) selectCommand $2;;  
+
+    *) usage;
+       exit 0;;
+esac
+
+for fichier in $(docker ps -a | awk '{print $NF}' | grep $name)
+do
+echo "$command""$fichier"
+docker $command $fichier
+done
+

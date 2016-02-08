@@ -1,0 +1,136 @@
+#!/bin/bash
+
+
+function usage
+{
+    echo "startOdoo [OPTIONS] directory name"
+    echo " Starts or restart a  odoo dockerised envionment with specified name. WIll create (or restart if necesary) 2 docker containers"
+    echo "     pg-name : postgres database"
+    echo "     odoo-name : odoo container itself"
+    echo " directory is the place that will be linked to odoo container for sources and addons"
+    
+    echo "OPTIONS"
+    echo "    -v version : source version to be launched defaults to 8.0. only meaningfull if directory is empty "
+    echo "    -s source : odoo or OCB, official odoo sources or odoo community backports, defaults to OCBonly meaningfull if directory is empty "
+    echo "    -b basedump  : initiates database with basedump file. Taken into account only if pg-name does not exist"
+    echo "    -p portassignment : links odoo to a host port. defaults to none"
+    echo "    -h : help"
+}
+
+
+# This function is use to show a waiting time for the sleep 
+function waiting
+{
+    cpt=$1
+    while (( $cpt > 0 )); do
+	    echo -ne "Time left : $cpt   \r"
+	    cpt=$(($cpt-1))
+	    sleep 1
+    done
+}
+
+function create_directory
+{
+	
+	mkdir -p "$directory"
+	cp -r $(pwd)/"$source" "$directory"/"$source"
+	mkdir "$directory"/addons
+
+
+}
+
+#start postgres database container if it doesnt already exists
+function startPostgres
+{
+	# check whether postgres exists and run
+	nb=$(docker ps -a | awk '{print $NF}' | grep pg-"$1" | wc -l)
+	if [ $nb -ne 0 ]
+    then
+		echo "Preexisting pg-$1 container, will use it"
+		nb=$(docker ps | awk '{print $NF}' | grep pg-"$1" | wc -l)
+		if [ $nb -ne 1 ]
+   		then
+   			echo "was stopped, restarting pg-$1"
+   			docker start pg-"$1"
+   		fi
+   	else
+   		echo "starting pg-$1 container"
+   		docker run -d -e POSTGRES_USER=odoo -e POSTGRES_PASSWORD=odoo --name pg-"$1" postgres
+   		echo  "wating it to be fully started"
+   		wait 10
+   		if [ $2 -ne '' ]
+   		then
+   			echo "Initialisation required with base $2"
+   			#Creating database
+   			docker exec -ti pg-$1 su postgres -c "createdb -O odoo Dynamease"
+   			# NB : prompts for a password. Could be avoided with a pgpass file, not necessary
+   			docker run -ti --rm --link pg-"$1":remote -v "$HOME":"$HOME" postgres su postgres -c "pg_restore -h remote -U odoo -d Dynamease -Fc ""$2"
+   		fi
+   	fi
+
+		
+}
+
+
+###################################
+#      Main Script Execution      #
+###################################
+
+version=8.0
+source=OCB
+basedump=''
+portassignment=''
+
+
+
+# Option analysis
+while getopts 'hv:s:b:p:' flag; do
+  case "${flag}" in
+    h)  usage ;
+	  exit 0;;
+    v) version="${OPTARG}" ;
+       argindex=$(($argindex+2));;
+    s) source="${OPTARG}" ;
+       argindex=$(($argindex+2));; 
+    b) basedump="${OPTARG}""_" ;
+       argindex=$(($argindex+2));;
+    p) portassignment="-p ""${OPTARG}" ;
+       argindex=$(($argindex+2));;
+    *)
+	error "Unexpected option ${flag}"
+	usage
+	;;
+  esac
+done
+
+if [ $(($#-2)) -ne $argindex ];then
+    echo "Invalid argument number $#"
+    usage
+    exit 1
+
+else
+	# check directory Existence
+	if [[ ! -d directory ]]; then
+		create_directory $directory
+	fi
+
+
+
+	startPostgres $name $basedump
+
+	# remove preexisting odoo container
+	docker rm -fv odoo-"$name"
+
+	#checkout appropriate version
+	currentdir=$(pwd)
+	cd "$directory"/"$source"
+	git checkout "$version"
+	cd "$currentdir"
+
+
+	# start odoo container
+	docker run -d $portassignment --name odoo-"$name" -v "$directory"/"$source":/opt/odoo/sources -v "$directory"/addons:/mnt/extra-addons --link pg-"$name":db yvnicolas/odoo
+
+fi
+
+
