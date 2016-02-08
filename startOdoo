@@ -44,7 +44,7 @@ function prepare_directory
 	#check directory existence
 	create_if_not_exist $directory
 
-	sourcedir="$directory""$source"
+	sourcedir="$directory""/""$source"
 	addonsdir="$directory""/addons"
 
 	create_if_not_exist $sourcedir
@@ -53,13 +53,14 @@ function prepare_directory
 	# checkout correct source version
 	currentdir=$(pwd)
 	cd $sourcedir
-	if [ ! -f "odoo.py"]
+	if [ ! -f "odoo.py" ]
 	then
 		echo "file odoo.py not found, copying source from ""$currentdir""/""$source""to ""$sourcedir"
-		cp -r $(pwd)/"$source" "$directory"/"$source"
+		cp -r "$currentdir""/""$source" "$directory"
 	fi
 
 	#checkout appropriate version
+	echo "current directory :""$(pwd)"
 	git checkout "$version"
 	cd "$currentdir"
 
@@ -143,13 +144,7 @@ else
 	name=${!#}
 	directory=${!arglast}
 
-	# check directory Existence
-	if [[ ! -d $directory ]]; then
-		create_directory "$directory"
-	fi
-
-
-
+	prepare_directory
 	startPostgres $name $basedump
 
 	# remove preexisting odoo container
