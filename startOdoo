@@ -80,7 +80,8 @@ version=8.0
 source=OCB
 basedump=''
 portassignment=''
-
+# index of first "real" argument
+argindex=0
 
 
 # Option analysis
