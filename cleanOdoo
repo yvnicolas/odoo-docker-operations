@@ -32,9 +32,9 @@ case $# in
        exit 0;;
 esac
 
-for fichier in $(docker ps -a | awk '{print $NF}' | grep $name)
+for fichier in $(docker ps -a | awk '{print $NF}' | grep $1)
 do
-echo "$command""$fichier"
+echo "Execution de :""$command"" ""$fichier"
 docker $command $fichier
 done
 
