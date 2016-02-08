@@ -110,9 +110,14 @@ if [ $(($#-2)) -ne $argindex ];then
     exit 1
 
 else
+	# assign variables
+	arglast=$(($#-1))
+	name=${!#}
+	directory=${!arglast}
+
 	# check directory Existence
-	if [[ ! -d directory ]]; then
-		create_directory $directory
+	if [[ ! -d $directory ]]; then
+		create_directory "$directory"
 	fi
 
 
