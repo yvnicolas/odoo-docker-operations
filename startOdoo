@@ -8,6 +8,8 @@ function usage
     echo "     pg-name : postgres database"
     echo "     odoo-name : odoo container itself"
     echo " directory is the place that will be linked to odoo container for sources and addons"
+    echo " NO SLASH AT END OF DIRECTORY OR IT DOESNT WORK"
+   
     
     echo "OPTIONS"
     echo "    -v version : source version to be launched defaults to 8.0. only meaningfull if directory is empty "
@@ -57,7 +59,7 @@ function startPostgres
    		echo "starting pg-$1 container"
    		docker run -d -e POSTGRES_USER=odoo -e POSTGRES_PASSWORD=odoo --name pg-"$1" postgres
    		echo  "wating it to be fully started"
-   		wait 10
+   		waiting 10
    		if [ $2 -ne '' ]
    		then
    			echo "Initialisation required with base $2"
