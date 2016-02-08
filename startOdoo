@@ -124,7 +124,7 @@ while getopts 'hv:s:b:p:' flag; do
        argindex=$(($argindex+2));; 
     b) basedump="${OPTARG}""_" ;
        argindex=$(($argindex+2));;
-    p) portassignment="-p ""${OPTARG}" ;
+    p) portassignment="-p ""${OPTARG}"":8069" ;
        argindex=$(($argindex+2));;
     *)
 	error "Unexpected option ${flag}"
@@ -152,6 +152,7 @@ else
 
 
 	# start odoo container
+	echo "portassignment :""$portassignment"
 	docker run -d $portassignment --name odoo-"$name" -v "$directory"/"$source":/opt/odoo/sources -v "$directory"/addons:/mnt/extra-addons --link pg-"$name":db yvnicolas/odoo
 
 fi
