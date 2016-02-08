@@ -31,12 +31,38 @@ function waiting
     done
 }
 
-function create_directory
+function create_if_not_exist
 {
-	
-	mkdir -p "$directory"
-	cp -r $(pwd)/"$source" "$directory"/"$source"
-	mkdir "$directory"/addons
+	if [[ ! -d $1 ]]; then
+		echo "directory $1"" does not exist, creating it"
+		mkdir -p "$1"
+	fi
+}
+
+function prepare_directory
+{
+	#check directory existence
+	create_if_not_exist $directory
+
+	sourcedir="$directory""$source"
+	addonsdir="$directory""/addons"
+
+	create_if_not_exist $sourcedir
+	create_if_not_exist $addonsdir
+
+	# checkout correct source version
+	currentdir=$(pwd)
+	cd $sourcedir
+	if [ ! -f "odoo.py"]
+	then
+		echo "file odoo.py not found, copying source from ""$currentdir""/""$source""to ""$sourcedir"
+		cp -r $(pwd)/"$source" "$directory"/"$source"
+	fi
+
+	#checkout appropriate version
+	git checkout "$version"
+	cd "$currentdir"
+
 
 
 }
@@ -128,12 +154,6 @@ else
 
 	# remove preexisting odoo container
 	docker rm -fv odoo-"$name"
-
-	#checkout appropriate version
-	currentdir=$(pwd)
-	cd "$directory"/"$source"
-	git checkout "$version"
-	cd "$currentdir"
 
 
 	# start odoo container
